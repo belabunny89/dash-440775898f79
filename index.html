@@ -1,0 +1,1092 @@
+<title>채널 현황판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F3F2EF; --panel:#FFFFFF; --ink:#16181D; --muted:#6B6A66; --line:#E2E0DA; --soft:#F8F7F4;
+  --accent:#D92B21; --accent-soft:#FBE7E5; --good:#1E7A4C; --good-soft:#E3F2EA; --warn:#9A6A00; --warn-soft:#FFF3D6;
+  --short:#3B5BDB; --short-soft:#E7ECFD; --long:#7A4BC4; --long-soft:#F0E9FB;
+  --sans:"IBM Plex Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#121316; --panel:#1B1D21; --ink:#ECEBE7; --muted:#9C9A94; --line:#2C2E33; --soft:#202226;
+  --accent:#FF5A4E; --accent-soft:#3A1D1B; --good:#5FCB93; --good-soft:#16301F; --warn:#E8B64A; --warn-soft:#352A12;
+  --short:#8CA3FF; --short-soft:#1D2440; --long:#C4A2F5; --long-soft:#2A2138;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121316; --panel:#1B1D21; --ink:#ECEBE7; --muted:#9C9A94; --line:#2C2E33; --soft:#202226;
+  --accent:#FF5A4E; --accent-soft:#3A1D1B; --good:#5FCB93; --good-soft:#16301F; --warn:#E8B64A; --warn-soft:#352A12;
+  --short:#8CA3FF; --short-soft:#1D2440; --long:#C4A2F5; --long-soft:#2A2138;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+.wrap>*{min-width:0}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-.3px;text-wrap:balance}
+.sub{color:var(--muted);font-size:12px;margin-top:2px}
+.tz{display:inline-flex;border:1px solid var(--line);background:var(--panel);border-radius:8px;overflow:hidden}
+.tz button{font:inherit;font-size:12px;border:0;background:transparent;color:var(--muted);padding:6px 10px;cursor:pointer}
+.tz button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.day{flex:0 0 auto;font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:7px 12px;cursor:pointer;display:grid;gap:1px;text-align:left;min-width:74px}
+.day small{color:var(--muted);font-size:11px}
+.day b{font-family:var(--mono);font-weight:600;font-size:13px}
+.day[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.day:focus-visible,.tz button:focus-visible,.chrow:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.tile span{color:var(--muted);font-size:12px}
+.tile b{display:block;font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:-.5px;margin-top:4px;font-variant-numeric:tabular-nums}
+.tile small{color:var(--muted);font-size:11px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.panel h2{font-size:14px;font-weight:600;margin:0;padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.panel h2 small{color:var(--muted);font-weight:400;font-size:12px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:11px;font-weight:500;color:var(--muted);text-align:right;padding:8px 12px;background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap;letter-spacing:.2px}
+th:first-child,td:first-child{text-align:left}
+td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-family:var(--mono);font-size:13px}
+td.name{font-family:var(--sans);font-size:14px;font-weight:600}
+tr:last-child td{border-bottom:0}
+.chrow{cursor:pointer}
+.chrow:hover td{background:var(--soft)}
+.caret{display:inline-block;width:14px;color:var(--muted);font-weight:400;transition:transform .15s}
+.chrow[aria-expanded="true"] .caret{transform:rotate(90deg)}
+.zero td{color:var(--muted)}
+.chgo{margin-left:6px;color:var(--muted);text-decoration:none;font-weight:400;font-size:13px;padding:2px 4px;border-radius:4px}
+.chgo:hover{color:var(--accent);background:var(--accent-soft)}
+.idle td.idle-cell{font-family:var(--sans);font-size:12.5px;color:var(--muted);text-align:left;white-space:normal}
+.idle:hover td{background:var(--soft)}
+.zero td.name{font-weight:500}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.vids td{background:var(--soft);font-size:12.5px}
+.vids td.t{font-family:var(--sans);white-space:normal;min-width:220px;max-width:460px}
+.vids a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)}
+.vids a:hover{border-color:var(--accent)}
+.pill{display:inline-block;font-family:var(--sans);font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:5px;margin-right:6px;vertical-align:1px}
+.pill.short{background:var(--short-soft);color:var(--short)}
+.pill.long{background:var(--long-soft);color:var(--long)}
+.age{color:var(--muted);font-size:11px}
+.subs{display:block;font-size:13px}
+.delta{display:block;font-size:11px;color:var(--muted)}
+.delta.up{color:var(--good)}
+.delta.down{color:var(--accent)}
+.state{padding:28px 16px;text-align:center;color:var(--muted)}
+.state b{display:block;color:var(--ink);font-size:15px;margin-bottom:4px}
+.note{color:var(--muted);font-size:12px;line-height:1.7}
+.warnbox{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:12px}
+@media (max-width:720px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.tile b{font-size:22px}.hide-sm{display:none}}
+/* 폰: 채널 이름 칸을 왼쪽에 붙여두고 숫자 칸은 옆으로 밀어서 본다 */
+th:first-child,td.name{position:sticky;left:0;z-index:1;background:var(--panel)}
+th:first-child{background:var(--soft)}
+.chrow:hover td.name{background:var(--soft)}
+@media (max-width:560px){
+  .wrap{gap:14px;padding-block:14px 36px}
+  h1{font-size:19px}
+  .tile{padding:12px}
+  .tile b{font-size:20px}
+  th,td{padding:8px 9px}
+  td{font-size:12.5px}
+  td.name{font-size:13px;max-width:132px;white-space:normal;line-height:1.35}
+  .vids td.t{min-width:200px}
+  .day{min-width:64px;padding:6px 10px}
+  .tz button{padding:6px 8px}
+}
+@media (prefers-reduced-motion:reduce){.caret{transition:none}}
+/* ===== 디스커버리 대시보드 (0927, 픽셀링식 사이드바) ===== */
+.app{display:grid;grid-template-columns:minmax(0,1fr);min-height:100%}
+.side{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;height:100vh;overflow-y:auto;border-right:1px solid var(--line);background:var(--panel);padding-block:18px;padding-inline:12px;display:grid;align-content:start;gap:4px}
+.brand{font-weight:700;font-size:15px;padding:4px 10px 12px;letter-spacing:-.2px}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.navgrp{font-size:10.5px;letter-spacing:.8px;color:var(--muted);padding:12px 10px 4px}
+.nav{font:inherit;font-size:13.5px;text-align:left;border:0;background:transparent;color:var(--ink);padding:8px 10px;border-radius:8px;cursor:pointer;display:flex;gap:8px;align-items:center;white-space:nowrap}
+.nav:hover{background:var(--soft)}
+.nav[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.nav .ic{width:18px;text-align:center;flex:0 0 auto}
+main.wrap{max-width:1240px;width:100%}
+.view{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.view>*{min-width:0}
+.seg{display:inline-flex;border:1px solid var(--line);background:var(--panel);border-radius:8px;overflow:hidden;flex-wrap:wrap;justify-self:start}
+.seg button{font:inherit;font-size:12.5px;border:0;background:transparent;color:var(--muted);padding:6px 11px;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.flabel{font-size:11.5px;color:var(--muted);min-width:56px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:3px 10px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.filters{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:10px}
+.frow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cats{padding:12px 16px;display:grid;gap:9px}
+.cat{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13px}
+.cat .bar{height:8px}.cat .bar i{background:var(--short)}
+.cat small{font-family:var(--mono);color:var(--muted);font-size:12px;white-space:nowrap}
+.memo{background:var(--good-soft);border-radius:12px;padding:12px 16px;font-size:13px;line-height:1.7}
+.memo b{display:block;color:var(--good);font-size:12px;margin-bottom:4px}
+.memo p{margin:0 0 4px}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);align-items:start}
+.tl li.withth{grid-template-columns:34px auto minmax(0,1fr) auto;align-items:center}
+.tl li:last-child{border-bottom:0}
+.tl .rk{font-family:var(--mono);font-weight:600;color:var(--muted);font-size:13px;padding-top:1px}
+.tl a{color:var(--ink);text-decoration:none;font-weight:500;overflow-wrap:anywhere}
+.tl a:hover{text-decoration:underline;text-decoration-color:var(--accent)}
+.tl .meta{color:var(--muted);font-size:12px;margin-top:3px;overflow-wrap:anywhere}
+.tl .num{text-align:right;font-family:var(--mono);white-space:nowrap}
+.tl .num b{display:block;font-size:14px;font-weight:600;color:var(--accent)}
+.tl .num small{color:var(--muted);font-size:11px;display:block}
+.tag{display:inline-block;font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:5px;margin-right:4px;vertical-align:1px;background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+.tag.new{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.tag.boom{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.tag.cat,.tag.short{background:var(--short-soft);color:var(--short);border-color:transparent}
+.tag.long{background:var(--long-soft);color:var(--long);border-color:transparent}
+.tag.good{background:var(--good-soft);color:var(--good);border-color:transparent}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.cols2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+/* 썸네일 카드 */
+.th{display:block;background-repeat:no-repeat;background-color:#111;flex:0 0 auto}
+.th.none{display:flex;align-items:center;justify-content:center;color:#888;font-size:12px;width:100%;height:100%}
+.grids{display:grid;gap:14px;padding:14px}
+.grid{display:grid;gap:14px}
+.grid.s{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.grid.l{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.card{display:grid;align-content:start;gap:8px;min-width:0}
+.cthumb{position:relative;display:flex;justify-content:center;align-items:center;background:#0d0d0f;border-radius:10px;overflow:hidden;text-decoration:none}
+.card.short .cthumb{height:240px}
+.card.long .cthumb{height:135px}
+.cthumb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cthumb .rank{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.72);color:#fff;font-family:var(--mono);font-size:12px;font-weight:600;padding:1px 7px;border-radius:6px}
+.cthumb .gain{position:absolute;bottom:6px;right:6px;background:var(--accent);color:#fff;font-family:var(--mono);font-size:12px;font-weight:600;padding:2px 7px;border-radius:6px}
+.cthumb .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:30px;opacity:0;background:rgba(0,0,0,.28);transition:opacity .15s}
+.cthumb:hover .play,.cthumb:focus-visible .play{opacity:1}
+.cbody{display:grid;gap:4px;min-width:0}
+.ctitle{color:var(--ink);text-decoration:none;font-weight:600;font-size:13px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.ctitle:hover{text-decoration:underline;text-decoration-color:var(--accent)}
+.ctags{display:flex;flex-wrap:wrap;gap:3px}
+.ctags:empty{display:none}
+.cmeta{color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xth{display:inline-flex;border-radius:4px;overflow:hidden;vertical-align:middle;margin-right:8px;float:left}
+.xt td.t{font-family:var(--sans);white-space:normal;min-width:260px;max-width:560px;text-align:left}
+.xt td.t a{color:var(--ink);text-decoration:none;font-weight:500}
+.xt td.t a:hover{text-decoration:underline;text-decoration-color:var(--accent)}
+.xt td.t small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+.count{color:var(--muted);font-size:12px}
+@media (max-width:980px){.cols3,.cols2{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{z-index:5;height:auto;border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;padding-block:8px;padding-inline:12px;gap:4px;scrollbar-width:none}
+  .brand,.navgrp{display:none}
+  .nav{padding:7px 10px;font-size:13px}
+}
+@media (max-width:560px){
+  .tl li{grid-template-columns:26px minmax(0,1fr);padding:10px 12px}.tl li.withth{grid-template-columns:26px auto minmax(0,1fr)}.tl li.withth .num{grid-column:3}
+  .tl .num{grid-column:2;text-align:left}.tl .num b,.tl .num small{display:inline;margin-right:6px}
+  .cat{grid-template-columns:90px minmax(0,1fr)}.cat small{grid-column:2}
+  .grid.s{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.l{grid-template-columns:minmax(0,1fr)}
+  .grids{padding:10px}
+}
+@media (prefers-reduced-motion:reduce){.cthumb .play{transition:none}}
+/* 0927 2차: 오늘 만들 것 · 비교 · 목표 */
+.todo{display:grid;gap:0}
+.trow{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;padding:14px 16px;border-bottom:1px solid var(--line);align-items:start}
+.trow:last-child{border-bottom:0}
+.trow.done{opacity:.55}
+.trow .cthumb{width:135px}
+.trow .card.long .cthumb,.trow .cthumb[style*="135px"]{width:240px}
+.tbody{display:grid;gap:5px;min-width:0}
+.who{font-size:13.5px}
+.who b{color:var(--accent)}
+.quote{font-size:13px;color:var(--ink);background:var(--soft);border-radius:8px;padding:6px 10px;justify-self:start}
+.orig{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;font-size:13px}
+.orig a{color:var(--ink);font-weight:600;text-decoration:none;overflow-wrap:anywhere}
+.orig a:hover{text-decoration:underline;text-decoration-color:var(--accent)}
+.vs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;padding:14px}
+.why{padding:0 16px 14px;font-size:13px;color:var(--ink)}
+.goal{padding:14px 16px;display:grid;gap:8px}
+.gnum{font-family:var(--mono);font-size:24px;font-weight:600}
+.bar.big{height:12px;border-radius:6px}
+.bar.big i{background:var(--good)}
+#mine-extra{display:grid;gap:16px}
+@media (max-width:560px){.trow{grid-template-columns:minmax(0,1fr)}.trow .cthumb{width:100%!important}}
+.refresh{background:var(--card,#1b1d22);color:inherit;border:1px solid rgba(128,128,128,.35);border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+.refresh:hover{border-color:rgba(128,128,128,.7)}
+.refresh[disabled]{opacity:.55;cursor:default}
+#freshline{font-size:12px;opacity:.75}
+</style>
+
+<div class="app">
+<aside class="side" id="side" aria-label="메뉴" hidden></aside>
+<main class="wrap">
+  <header>
+    <div>
+      <h1>채널 현황판</h1>
+      <div class="sub" id="updated">데이터 불러오는 중…</div>
+      <div class="sub" id="freshline" style="margin-top:4px"></div>
+    </div>
+    <button type="button" id="refresh" class="refresh" title="최신 수치를 다시 불러와">새로고침</button>
+    <div class="tz" role="group" aria-label="날짜 기준 시간대">
+      <button type="button" id="tz-aest" aria-pressed="true">호주 시간</button>
+      <button type="button" id="tz-kst" aria-pressed="false">한국 시간</button>
+    </div>
+  </header>
+
+  <div class="view" id="v-mine">
+  <nav class="days" id="days" aria-label="날짜 선택"></nav>
+
+  <section class="tiles" aria-label="선택한 날 합계">
+    <div class="tile"><span>올라간 영상</span><b id="t-count">–</b><small id="t-count-sub">&nbsp;</small></div>
+    <div class="tile"><span>조회수</span><b id="t-views">–</b><small>그날 올라간 영상 합계</small></div>
+    <div class="tile"><span>좋아요</span><b id="t-likes">–</b><small id="t-likes-sub">&nbsp;</small></div>
+    <div class="tile"><span>댓글</span><b id="t-comments">–</b><small>그날 올라간 영상 합계</small></div>
+  </section>
+
+  <section class="panel">
+    <h2>채널별 <small id="panel-sub">줄을 누르면 영상 목록이 펼쳐져</small></h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>채널</th><th>구독자</th><th>영상</th><th>조회수</th><th class="hide-sm">비중</th><th>좋아요</th><th>댓글</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="7" class="state"><b>불러오는 중</b>잠깐만.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div id="errors"></div>
+  <p class="note">조회수·좋아요·댓글은 유튜브 공개 수치를 모은 시점 기준이야. 좋아요가 0개거나 숨긴 영상은 "–"로 나와. 구독자 수는 유튜브가 반올림해서 보여주는 값이고, 숨긴 채널은 "비공개"야. 4시간마다 새로 모아. 수익은 넣지 않았어.</p>
+  <div id="mine-extra"></div>
+  </div>
+
+  <div class="view" id="v-disc" hidden>
+    <nav class="days" id="tdays" aria-label="발굴 날짜"></nav>
+    <div id="dbody" class="view"></div>
+  </div>
+</main>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const nf = new Intl.NumberFormat('ko-KR');
+  const fmt = n => (n==null ? '–' : nf.format(n));
+  const TZ = {aest:'Australia/Brisbane', kst:'Asia/Seoul'};
+  let tz = 'aest'; try{ tz = localStorage.getItem('dash:tz') || 'aest'; }catch(e){}
+  let data = null, selected = null, showIdle = false; const open = new Set();
+
+  function dayKey(ts, zone){
+    return new Intl.DateTimeFormat('en-CA',{timeZone:TZ[zone],year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ts*1000));
+  }
+  function timeOf(ts, zone){
+    return new Intl.DateTimeFormat('ko-KR',{timeZone:TZ[zone],hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ts*1000));
+  }
+  function dayLabel(key){
+    const [y,m,d] = key.split('-').map(Number);
+    const wd = ['일','월','화','수','목','금','토'][new Date(Date.UTC(y,m-1,d)).getUTCDay()];
+    return {top: `${m}/${d} (${wd})`};
+  }
+  function dur(s){ if(!s) return ''; const m=Math.floor(s/60), r=s%60; return m? `${m}:${String(r).padStart(2,'0')}` : `${r}초`; }
+  function ago(ts){
+    const h = (Date.now()/1000 - ts)/3600;
+    return h < 1 ? '방금' : h < 24 ? `${Math.floor(h)}시간 전` : `${Math.floor(h/24)}일 전`;
+  }
+  function sum(list,k){ let s=0, any=false; for(const v of list){ if(v[k]!=null){ s+=v[k]; any=true; } } return any? s : null; }
+
+  function render(){
+    document.querySelectorAll('.tz button').forEach(b=>b.setAttribute('aria-pressed', String(b.id==='tz-'+tz)));
+    if(!data){ return; }
+    const vids = (data.videos||[]).filter(v=>v.ts);
+    const byDay = new Map();
+    for(const v of vids){ const k=dayKey(v.ts,tz); if(!byDay.has(k)) byDay.set(k,[]); byDay.get(k).push(v); }
+    const today = dayKey(Math.floor(Date.now()/1000), tz);
+    const keys = [];
+    for(let i=0;i<14;i++){ const k = dayKey(Math.floor(Date.now()/1000) - i*86400, tz); if(!keys.includes(k)) keys.push(k); }
+    if(!selected || !keys.includes(selected)) selected = keys.find(k => (byDay.get(k)||[]).length) || today;
+
+    const daysEl = $('days'); daysEl.replaceChildren();
+    for(const k of keys){
+      const list = byDay.get(k)||[];
+      const b = document.createElement('button'); b.type='button'; b.className='day';
+      b.setAttribute('aria-pressed', String(k===selected));
+      const lab = dayLabel(k);
+      b.innerHTML = `<small></small><b></b>`;
+      b.querySelector('small').textContent = k===today ? '오늘' : lab.top;
+      b.querySelector('b').textContent = list.length ? `${list.length}편` : '0편';
+      b.onclick = ()=>{ selected=k; render(); };
+      daysEl.append(b);
+    }
+
+    const dayVids = (byDay.get(selected)||[]);
+    const shorts = dayVids.filter(v=>v.kind==='short').length;
+    $('t-count').textContent = fmt(dayVids.length);
+    $('t-count-sub').textContent = dayVids.length ? `숏폼 ${shorts} · 롱폼 ${dayVids.length-shorts}` : '이날은 올라간 영상이 없어';
+    $('t-views').textContent = fmt(sum(dayVids,'views') ?? (dayVids.length?null:0));
+    const likes = sum(dayVids,'likes');
+    $('t-likes').textContent = fmt(likes ?? (dayVids.length?null:0));
+    const hidden = dayVids.filter(v=>v.likes==null).length;
+    $('t-likes-sub').textContent = hidden ? `좋아요 숨김 ${hidden}편 제외` : '그날 올라간 영상 합계';
+    $('t-comments').textContent = fmt(sum(dayVids,'comments') ?? (dayVids.length?null:0));
+
+    const maxViews = Math.max(1, ...data.channels.map(c => sum(dayVids.filter(v=>v.cid===c.cid),'views')||0));
+    const tb = $('rows'); tb.replaceChildren();
+    const chans = [...data.channels].sort((a,b)=>(sum(dayVids.filter(v=>v.cid===b.cid),'views')||0)-(sum(dayVids.filter(v=>v.cid===a.cid),'views')||0));
+    const idle = chans.filter(c=>!dayVids.some(v=>v.cid===c.cid));
+    const active = chans.filter(c=>dayVids.some(v=>v.cid===c.cid));
+    const drawChannel = (c)=>{
+      const list = dayVids.filter(v=>v.cid===c.cid).sort((a,b)=>b.ts-a.ts);
+      const tr = document.createElement('tr');
+      tr.className = 'chrow' + (list.length? '' : ' zero');
+      const vs = sum(list,'views')||0;
+      tr.innerHTML = `<td class="name"><span class="caret">›</span><span class="cn"></span></td><td class="sb"><span class="subs"></span><span class="delta"></span></td><td>${list.length}</td><td>${list.length?fmt(vs):'–'}</td><td class="hide-sm"><div class="bar"><i style="width:${(vs/maxViews*100).toFixed(1)}%"></i></div></td><td>${list.length?fmt(sum(list,'likes')):'–'}</td><td>${list.length?fmt(sum(list,'comments')):'–'}</td>`;
+      tr.querySelector('.cn').textContent = c.name;
+      if(c.cid){ const go=document.createElement('a'); go.className='chgo'; go.textContent='↗'; go.title='채널 열기'; go.setAttribute('aria-label', c.name+' 채널 열기');
+        go.href='https://www.youtube.com/channel/'+c.cid; go.target='_blank'; go.rel='noopener'; go.onclick=e=>e.stopPropagation();
+        tr.querySelector('td.name').append(go); }
+      tr.querySelector('.subs').textContent = c.subs!=null ? fmt(c.subs) : '비공개';
+      const dl = tr.querySelector('.delta');
+      if(c.subs!=null && c.subs_prev!=null){
+        const df = c.subs - c.subs_prev;
+        dl.textContent = df===0 ? '변동 없음' : (df>0?'+':'−') + fmt(Math.abs(df));
+        dl.classList.add(df>0?'up':df<0?'down':'flat');
+        dl.title = '비교 기준: ' + new Date(c.subs_prev_ts*1000).toLocaleString('ko-KR');
+      }
+      if(list.length){
+        tr.tabIndex = 0; tr.setAttribute('role','button');
+        tr.setAttribute('aria-expanded', String(open.has(c.cid)));
+        const toggle = ()=>{ open.has(c.cid)? open.delete(c.cid) : open.add(c.cid); render(); };
+        tr.onclick = toggle; tr.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } };
+      } else { tr.querySelector('.caret').style.visibility='hidden'; }
+      tb.append(tr);
+      if(list.length && open.has(c.cid)){
+        for(const v of list){
+          const r = document.createElement('tr'); r.className='vids';
+          r.innerHTML = `<td class="t" colspan="2"><span class="pill"></span><a target="_blank" rel="noopener"></a><div class="age"></div></td><td>${timeOf(v.ts,tz)}</td><td>${fmt(v.views)}</td><td class="hide-sm">${dur(v.dur)}</td><td>${fmt(v.likes)}</td><td>${fmt(v.comments)}</td>`;
+          const p = r.querySelector('.pill'); p.classList.add(v.kind); p.textContent = v.kind==='short'?'숏폼':'롱폼';
+          const a = r.querySelector('a'); a.textContent = v.title || v.id;
+          a.href = (v.kind==='short' ? 'https://www.youtube.com/shorts/' : 'https://www.youtube.com/watch?v=') + v.id;
+          r.querySelector('.age').textContent = `${ago(v.ts)} 업로드`;
+          tb.append(r);
+        }
+      }
+    };
+    active.forEach(drawChannel);
+    if(idle.length){
+      const tr = document.createElement('tr'); tr.className='chrow idle'; tr.tabIndex=0; tr.setAttribute('role','button');
+      tr.setAttribute('aria-expanded', String(showIdle));
+      tr.innerHTML = `<td colspan="7" class="idle-cell"><span class="caret">›</span><span class="it"></span></td>`;
+      tr.querySelector('.it').textContent = showIdle ? `이날 안 올린 채널 ${idle.length}개 접기` : `이날 안 올린 채널 ${idle.length}개 — ${idle.map(c=>c.name).join(' · ')}`;
+      const t = ()=>{ showIdle=!showIdle; render(); };
+      tr.onclick=t; tr.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); t(); } };
+      tb.append(tr);
+      if(showIdle) idle.forEach(drawChannel);
+    }
+    $('panel-sub').textContent = dayVids.length ? '줄을 누르면 영상 목록이 펼쳐져' : '이날은 올라간 영상이 없어';
+    const u = new Date(data.updated*1000);
+    const subsTotal = sum(data.channels,'subs');
+    $('updated').textContent = `전체 구독자 ${fmt(subsTotal)} · ${new Intl.DateTimeFormat('ko-KR',{timeZone:TZ[tz],month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(u)} 기준 · 채널 ${data.channels.length}개 · 최근 영상 ${vids.length}편`;
+    const errs = (data.errors||[]);
+    const eb = $('errors'); eb.replaceChildren();
+    if(errs.length){ const d=document.createElement('div'); d.className='warnbox'; d.textContent = `이번에 못 가져온 항목 ${errs.length}개가 있어. 다음 갱신 때 다시 시도해.`; eb.append(d); }
+  }
+
+  $('tz-aest').onclick = ()=>{ tz='aest'; try{localStorage.setItem('dash:tz',tz)}catch(e){} selected=null; render(); };
+  $('tz-kst').onclick = ()=>{ tz='kst'; try{localStorage.setItem('dash:tz',tz)}catch(e){} selected=null; render(); };
+
+  function showState(title, text){
+    $('rows').innerHTML = `<tr><td colspan="7" class="state"><b></b><span></span></td></tr>`;
+    $('rows').querySelector('b').textContent = title; $('rows').querySelector('span').textContent = text;
+  }
+
+  // 1012: 클로드 한도와 무관하게 — 깃허브 gist 에 올린 최신 수치를 직접 읽는다(더 새것이면 씀)
+  const GIST = 'https://gist.githubusercontent.com/belabunny89/40bb62126715a614edc43dc1aeac7f80/raw/snap_latest.json?t='+Date.now();  // 1012: 페이지와 같이 올린 파일(바깥 주소는 claude.ai 가 막음)
+  async function pullGist(){
+    try{ const r = await fetch(GIST.split('?t=')[0]+'?t='+Date.now(), {cache:'no-store'}); if(!r.ok) return;
+      const j = await r.json();
+      if(j && j.updated && (!data || (data.updated||0) < j.updated)){ data = j; render(); window.dispatchEvent(new CustomEvent('snapgist',{detail:j})); }
+    }catch(e){}
+  }
+  pullGist(); setInterval(pullGist, 10*60*1000);
+  (async function(){
+    const db = window.claude && window.claude.use ? await window.claude.use('db') : null;
+    if(!db && data) return;
+    if(!db){ return; }  // 1015: 깃허브 페이지판 — gist 만 읽음
+    db.doc('snap/latest').onSnapshot(s=>{
+      if(!s.exists){ showState('아직 모은 데이터가 없어', '첫 수집이 끝나면 여기 채워져.'); $('updated').textContent='대기 중'; return; }
+      const n = s.data(); if(!data || (data.updated||0) <= (n.updated||0)){ data = n; render(); }
+    }, e=>{ showState('데이터를 못 불러왔어', '페이지를 새로고침해줘.'); });
+  })();
+  render();
+})();
+</script>
+<script>
+/* 내 대시보드 디스커버리 (0927, 픽셀링 참고)
+   db: trend/index {days,latest}, 하루치 = trend/{d,x,p,a,m,s}-YYYY-MM-DD (문서 한도 256KB 라 나눔)
+   d 본문 · x 탐색 풀 · p 정치 · a 오늘 할 일 등 · m 영화·드라마 · s SNS·커뮤니티·검색어 */
+(function(){
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; };
+  const man = n => n==null ? '–' : n>=1e8 ? (n/1e8).toFixed(1)+'억' : n>=1e4 ? (n>=1e6 ? Math.round(n/1e4) : (n/1e4).toFixed(1))+'만' : String(Math.round(n));
+  const flag = c => c==='전세계' ? '🌍' : /^[A-Z]{2}$/.test(c) ? c.replace(/./g, ch => String.fromCodePoint(0x1F1E6 + ch.charCodeAt(0) - 65)) : c;
+  const flags = (w, n=6) => (w||[]).slice(0,n).map(flag).join('') + ((w||[]).length>n ? '+'+(w.length-n) : '');
+  const ageTxt = ts => { if(!ts) return ''; const h=(Date.now()/1000-ts)/3600; return h<1?'방금':h<48?Math.round(h)+'시간 전':Math.round(h/24)+'일 전'; };
+  const ytUrl = (id, kind) => (kind==='short'||kind==='s' ? 'https://www.youtube.com/shorts/' : 'https://www.youtube.com/watch?v=') + id;
+  const hms = s => { s=Math.round(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0'); };
+  const store = { get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+
+  const VIEWS = [
+    {id:'mine', ic:'🏠', name:'내 채널', grp:'홈'},
+  ];  // 1012: 내 채널만 남김
+  let view = store.get('dash:view4','mine'); if(!VIEWS.some(v=>v.id===view)) view='mine';
+  let idx = null, docs = {}, tsel = null, db = null, unsub = null, snap = null;
+  const F = Object.assign({period:'d', type:'all', ctry:[], gain:'all', subs:'all', sort:'g', sa:true}, store.get('dash:vf', {}));
+  const T = Object.assign({dorm:'정치', rising:'sd', pol:'보수', news:'short_daily', sns:'tiktok', out:'global', ch:'all', media:'영화', comm:'groups', kids:'short'}, store.get('dash:tabs', {}));
+  const setTab = (k,v)=>{ T[k]=v; store.set('dash:tabs', T); render(); };
+
+  /* ---------- 공통 조각 ---------- */
+  function nav(){
+    const side = $('side'); side.replaceChildren();
+    const b0 = el('div','brand','내 대시보드'); b0.append(el('small',null,'채널 현황 + 정치 + 전세계 발굴')); side.append(b0);
+    let g = null;
+    for(const v of VIEWS){
+      if(v.grp!==g){ g=v.grp; if(g!=='홈') side.append(el('div','navgrp',g)); }
+      const b = el('button','nav'); b.type='button';
+      b.append(el('span','ic',v.ic), el('span',null,v.name));
+      if(v.id===view) b.setAttribute('aria-current','page');
+      b.onclick = ()=>{ view=v.id; store.set('dash:view4',view); show(); window.scrollTo(0,0); };
+      side.append(b);
+    }
+  }
+  function show(){
+    nav();
+    const mine = view==='mine';
+    $('v-mine').hidden = !mine; $('v-disc').hidden = mine;
+    document.querySelector('.tz').style.visibility = mine ? '' : 'hidden';
+    const v = VIEWS.find(x=>x.id===view);
+    document.querySelector('header h1').textContent = mine ? '채널 현황판' : v.name;
+    $('updated').hidden = !mine;
+    if(mine) mineExtra(); else render();
+  }
+  function panel(title, sub){ const p=el('section','panel'); const h=el('h2',null,title); if(sub) h.append(el('small',null,sub)); p.append(h); return p; }
+  function state(title, text){ const d=el('div','state'); d.append(el('b',null,title), el('span',null,text)); return d; }
+  function seg(opts, cur, on){ const s=el('div','seg'); for(const [k,t] of opts){ const b=el('button',null,t); b.type='button'; b.setAttribute('aria-pressed', String(k===cur)); b.onclick=()=>on(k); s.append(b); } return s; }
+  function link(text, href, cls){ const a=el('a',cls||null,text); a.href=href; a.target='_blank'; a.rel='noopener'; return a; }
+
+  let CUR = null;
+  function thumb(key, scale){
+    const t = CUR && CUR.thumbs && CUR.thumbs[key];
+    if(!t) return null;
+    let url, W, H, x, y, w, h;
+    if(t.length===5){ const [sh,a,b,c,d] = t; url = CUR.sprites && CUR.sprites[sh]; [W,H] = (CUR.sheets||{})[sh]||[0,0]; [x,y,w,h]=[a,b,c,d]; }
+    else { url = CUR.sprite; [W,H] = CUR.sprite_size||[0,0]; [x,y,w,h]=t; }
+    if(!url) return null;
+    const e = el('span','th');
+    e.style.width = (w*scale)+'px'; e.style.height = (h*scale)+'px';
+    e.style.backgroundImage = `url("${url}")`;
+    e.style.backgroundSize = `${W*scale}px ${H*scale}px`;
+    e.style.backgroundPosition = `${-x*scale}px ${-y*scale}px`;
+    return e;
+  }
+  function card(v, i, opt={}){
+    const kind = v.kind || (v.k==='s'?'short':'long');
+    const c = el('article','card '+kind);
+    const href = opt.href || ytUrl(v.id, kind);
+    const a = link('', href, 'cthumb'); a.setAttribute('aria-label', (v.title||v.t||'')+' 열기');
+    const t = thumb(opt.key || v.id, 1); if(t) a.append(t); else a.append(el('span','th none', kind==='short'?'쇼츠':'영상'));
+    if(i!=null) a.append(el('span','rank', String(i+1)));
+    a.append(el('span','gain', opt.badge || (opt.pol ? man(v.views)+'회' : '+'+man(v.gain ?? v.g))));
+    a.append(el('span','play','▶'));
+    c.append(a);
+    const b = el('div','cbody');
+    b.append(link(opt.title || v.title || v.t || v.id, href, 'ctitle'));
+    const tags = el('div','ctags');
+    for(const [cls,txt] of (opt.tags||[])) tags.append(el('span','tag '+cls, txt));
+    if(opt.ratio && v.ratio!=null) tags.append(el('span','tag boom', `구독자의 ${v.ratio}배`));
+    if(v.cat) tags.append(el('span','tag cat', v.cat));
+    if(v.work) tags.append(el('span','tag cat', v.work));
+    if(v.new) tags.append(el('span','tag new','🆕')); else if(v.streak) tags.append(el('span','tag', v.streak+'일째'));
+    if(v.breakout) tags.append(el('span','tag boom','🚀'));
+    b.append(tags);
+    for(const line of (opt.meta || null) || [
+      `${v.channel||v.c||''}${(v.subs ?? v.s)!=null?' · 구독 '+man(v.subs ?? v.s):''}`,
+      opt.pol ? `시간당 ${man(v.vph)} · ${ageTxt(v.published)}${v.likes!=null?' · 좋아요 '+man(v.likes):''}`
+              : `누적 ${man(v.views ?? v.w)} · ${flags(v.where||v.r,5)}${(v.published||v.p)?' · '+ageTxt(v.published||v.p):''}`]) b.append(el('div','cmeta', line));
+    c.append(b); return c;
+  }
+  function grid(list, opt={}){
+    const box = el('div','grids');
+    const isS = v => (v.kind || (v.k==='s'?'short':'long'))==='short';
+    const S = list.map((v,i)=>[v,i]).filter(([v])=>isS(v)), L = list.map((v,i)=>[v,i]).filter(([v])=>!isS(v));
+    for(const [arr,cls] of [[S,'grid s'],[L,'grid l']]){ if(!arr.length) continue; const g=el('div',cls); arr.forEach(([v,i])=>g.append(card(v,i,opt))); box.append(g); }
+    if(!list.length) box.append(state('없음','이날은 해당 영상이 없어.'));
+    return box;
+  }
+  function chipsRow(title, list){
+    const p = panel(title); const box = el('div','chips'); box.style.padding='12px 16px';
+    const mx = Math.max(1, ...list.map(x=>x[1]));
+    for(const [w,v] of list){ const c = el('span','chip', `${w} ${man(v)}`); c.style.cursor='default'; if(v===mx) c.setAttribute('aria-pressed','true'); box.append(c); }
+    if(!list.length) box.append(el('span','count','없음'));
+    p.append(box); return p;
+  }
+  function chanList(list, sub){
+    const ol = el('ol','tl');
+    for(const [i,c] of (list||[]).entries()){
+      const L = el('li', c.top_id ? 'withth' : null); L.append(el('span','rk',String(i+1)));
+      if(c.top_id){ const ta=link('', ytUrl(c.top_id,c.top_kind), 'xth'); const tt=thumb(c.top_id,0.42); if(tt) ta.append(tt); L.append(ta); }
+      const mid = el('div'); mid.append(link(c.name||c.cid, 'https://www.youtube.com/channel/'+c.cid));
+      const m = el('div','meta');
+      if(c.ratio!=null && c.ratio>=1) m.append(el('span','tag boom', `구독자의 ${c.ratio}배`));
+      if(c.kid) m.append(el('span','tag','👶'));
+      m.append(document.createTextNode(`구독 ${man(c.subs)}` + (c.short!=null ? ` · 쇼츠 ${c.short} · 롱폼 ${c.long} · ${flags(c.where)}` : ` · 영상 ${c.n}편`)));
+      if(c.top_title){ m.append(document.createTextNode(' · 대표: ')); const ta=link((c.top_title||'').slice(0,60), ytUrl(c.top_id,c.top_kind)); ta.style.fontWeight='400'; m.append(ta); }
+      mid.append(m);
+      const num = el('div','num'); num.append(el('b',null,(c.gain!=null?'+'+man(c.gain):man(c.views))), el('small',null, sub || (c.n+'편')));
+      L.append(mid, num); ol.append(L);
+    }
+    if(!(list||[]).length) ol.append(state('없음',''));
+    return ol;
+  }
+
+  /* ---------- 날짜·렌더 ---------- */
+  function dayNav(){
+    const nav = $('tdays'); nav.replaceChildren();
+    if(!idx) return;
+    for(const d of [...idx.days].reverse()){
+      const b = el('button','day'); b.type='button'; b.setAttribute('aria-pressed', String(d===tsel));
+      const [y,mo,da] = d.split('-').map(Number);
+      const wd = ['일','월','화','수','목','금','토'][new Date(Date.UTC(y,mo-1,da)).getUTCDay()];
+      b.append(el('small',null, d===idx.latest ? '오늘' : `${mo}/${da} (${wd})`), el('b',null, `${mo}/${da}`));
+      b.onclick = ()=>{ tsel=d; load(); };
+      nav.append(b);
+    }
+  }
+  function render(){
+    dayNav();
+    const body = $('dbody'); body.replaceChildren();
+    const v = VIEWS.find(x=>x.id===view);
+    if(v.desc) body.append(el('p','note',v.desc));
+    if(!db){ body.append(state('데이터에 연결할 수 없어','claude.ai 에서 로그인한 상태로 열어줘.')); return; }
+    if(!idx){ body.append(state('불러오는 중','잠깐만.')); return; }
+    const d = docs[tsel]; CUR = d || null;
+    if(!d){ body.append(state('불러오는 중', tsel+' 데이터')); return; }
+    const V = {home:vHome, todo:vTodo, pol:vPol, sched:vSched, compare:vCompare, titles:vTitles, media:vMedia, videos:vVideos,
+               dormant:vDormant, rising:vRising, outlier:vOutlier, channels:vChannels, cats:vCats, kids:vKids, search:vSearch, sns:vSns, community:vComm, noe:vNoe, noeriv:vNoeRiv};
+    try{ V[view](body, d); }catch(e){ body.append(state('이 칸을 그리다 오류가 났어', String(e && e.message || e))); }
+    if(d.updated){ const u = new Date(d.updated*1000);
+      body.append(el('p','note', `${d.day} 수집 · ${u.toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})} 갱신 · 매일 새벽 5시 반에 모으고 7시 전후로 바뀌어. 정치 급상승은 2시간마다 텔레그램 알림.`)); }
+  }
+
+
+  /* ---------- 💡 뇌전구 (0930) ---------- */
+  function noeEmpty(body, d){ body.append(state('아직 없음', (d.day||'')+' 뇌전구 데이터가 없어 — 매일 아침 수집부터 들어가.')); }
+  function srcTag(src){ const m={g:'구글',y:'유튜브',n:'네이버',g2:'구글²',y2:'유튜브²',n2:'네이버²'}; return (src||[]).map(x=>m[x]||x).join('·'); }
+  const wk = q => 'https://www.youtube.com/results?search_query='+encodeURIComponent(q)+'&sp=EgIIAw%253D%253D';
+  function vNoe(body, d){
+    const N = d.noe; if(!N || !(N.issues||[]).length){ noeEmpty(body, d); return; }
+    N.issues.forEach((iss, i)=>{
+      const p = panel(`${i+1}위 이슈 · ${iss.key}`, iss.what || '');
+      if(iss.why) p.append(el('p','note', '근거: '+iss.why));
+      if((iss.picks||[]).length){
+        const ol = el('ol','tl');
+        iss.picks.forEach(k=>{ const L=el('li'); L.append(el('span','rk','🎯'));
+          const mid=el('div'); mid.append(link(k.title || k.q, wk(k.q)));
+          const m=el('div','meta'); m.append(el('span','tag boom', k.q)); m.append(document.createTextNode(' '+(k.angle||'')+(k.why?' · '+k.why:''))); mid.append(m);
+          L.append(mid, el('div','num')); ol.append(L); });
+        p.append(el('p','note','🎯 오늘 만들 꼬리')); p.append(ol);
+      }
+      if((iss.angles||[]).length){
+        const ol = el('ol','tl');
+        iss.angles.forEach((a,j)=>{ const L=el('li'); L.append(el('span','rk','📰'));
+          const mid=el('div'); mid.append(link(`${a.who} — ${a.what||''}`, wk(a.q||iss.key)));
+          const m=el('div','meta'); m.append(el('span','tag cat', a.q||''));
+          m.append(document.createTextNode(` 첫 보도 ${a.first||'?'} · 기사 ${a.n||'?'}건 `));
+          if((a.taken||[]).length){ const tg=el('span','tag','⚔️ 선점 '+a.taken.length); tg.title=a.taken.join('\n'); m.append(tg); }
+          if(a.top) m.append(document.createTextNode(` 최고 ${man(a.top.v)} ${a.top.ch}`));
+          mid.append(m);
+          const num=el('div','num'); num.append(el('b',null, a.yt_n ? man(a.yt_sum) : '0'), el('small',null, `이번주 ${a.yt_n||0}편`));
+          L.append(mid, num); ol.append(L); });
+        p.append(el('p','note','📰 뉴스에 새로 등장한 발언자·엮인 사건 — 경쟁 채널이 실제로 꼬리를 따는 곳. 오른쪽 = 이번 주 유튜브 조회 합')); p.append(ol);
+      }
+      const ts = (iss.tails||[]).filter(t=>t.n!=null);
+      if(ts.length){
+        const ol = el('ol','tl');
+        ts.forEach((t,j)=>{ const L=el('li'); L.append(el('span','rk',String(j+1)));
+          const mid=el('div'); mid.append(link(t.q, wk(t.q)));
+          const m=el('div','meta'); m.append(document.createTextNode(srcTag(t.src)+' '));
+          if((t.taken||[]).length){ const tg=el('span','tag','⚔️ 선점 '+t.taken.length); tg.title=t.taken.join('\n'); m.append(tg); }
+          if(t.top) m.append(document.createTextNode(` 최고 ${man(t.top.v)} ${t.top.ch}: ${(t.top.t||'').slice(0,34)}`));
+          mid.append(m);
+          const num=el('div','num'); num.append(el('b',null, t.n ? man(t.sum) : '0'), el('small',null, `이번주 ${t.n}편`));
+          L.append(mid, num); ol.append(L); });
+        p.append(el('p','note','연관검색어 꼬리 — 오른쪽 숫자 = 이번 주 영상 조회 합(적을수록 빈칸)')); p.append(ol);
+      } else if((iss.tails||[]).length){
+        const box=el('div','chips'); box.style.padding='12px 16px';
+        iss.tails.slice(0,16).forEach(t=>box.append(link(t.q, wk(t.q), 'chip')));
+        p.append(box);
+      }
+      body.append(p);
+    });
+  }
+  function vNoeRiv(body, d){
+    const N = d.noe; if(!N || !(N.rivals||[]).length){ noeEmpty(body, d); return; }
+    for(const r of N.rivals){
+      const p = panel(`${r.name}${r.new?' · 🆕 '+r.new:''}`, r.how); const ol=el('ol','tl');
+      (r.videos||[]).forEach((v,j)=>{ const L=el('li'); L.append(el('span','rk', v.first===N.day && r.new<(r.videos||[]).length ? '🆕' : String(j+1)));
+        const mid=el('div'); mid.append(link(v.t, 'https://www.youtube.com/shorts/'+v.id)); mid.append(el('div','meta', '처음 본 날 '+(v.first||'').slice(5)));
+        const num=el('div','num'); num.append(el('b',null,man(v.v))); L.append(mid,num); ol.append(L); });
+      if(!(r.videos||[]).length) ol.append(state('못 가져옴','이 채널 목록을 오늘 못 읽었어.'));
+      const n=el('p','note'); n.append(link('채널 열기','https://www.youtube.com/channel/'+r.cid+'/shorts')); p.append(n);
+      p.append(ol); body.append(p);
+    }
+  }
+
+  /* ---------- 🏠 홈 ---------- */
+  function vHome(body, d){
+    const h = new Date().getHours();
+    const hi = h<6?'늦은 밤이에요':h<11?'좋은 아침이에요':h<14?'점심 시간이에요':h<18?'나른한 오후예요':'저녁이에요';
+    const hero = el('div','memo'); hero.append(el('b',null,`${hi} — 오늘 어디부터 볼지 골라`));
+    const A = d.actions || {}, P = d.pol || {}, M = d.media || {};
+    const todo = (A.todo||[]).filter(t=>!t.made);
+    const sum = (X, lanes) => lanes.map(l=>((X.lanes||{})[l]||{}).count||0).reduce((a,b)=>a+b,0);
+    hero.append(el('p',null, `🎯 만들 소재 ${todo.length}개 (원본 찾은 것 ${todo.filter(t=>t.orig).length}) · 🏛 정치 48시간 ${sum(P,['보수','진보','방송'])}편 · 🎬 영화·드라마 ${sum(M,['영화','드라마','공식'])}편 · 🗓 오늘 국회 ${(A.schedule||[]).filter(s=>s.dt===d.day).length}건`));
+    body.append(hero);
+    const go = (id,label)=>{ const b=el('button','chip',label); b.type='button'; b.onclick=()=>{ view=id; store.set('dash:view4',id); show(); window.scrollTo(0,0); }; return b; };
+    const jumps = el('div','chips'); [['todo','🎯 오늘 만들 것'],['noe','💡 오늘의 꼬리'],['pol','🏛 정치 동향'],['media','🎬 영화·드라마'],['rising','🔥 급상승'],['cats','🗂 카테고리·공백'],['community','💬 커뮤니티']].forEach(([i,l])=>jumps.append(go(i,l))); body.append(jumps);
+
+    if(todo.length){ const p = panel('🎯 오늘 만들 것 TOP 6', '충돌 센 순 · 전체는 왼쪽 메뉴'); p.append(grid(todo.slice(0,6), {pol:true})); body.append(p); }
+    const two = el('div','cols2');
+    const sch = (A.schedule||[]).filter(s=>s.hot && s.dt<=nextDay(d.day,1)).slice(0,8);
+    const ps = panel('🗓 오늘·내일 국회', '싸움 날 자리'); const ol=el('ol','tl');
+    for(const s of sch){ const L=el('li'); L.append(el('span','rk', s.hot===2?'🔥':'⭐')); const mid=el('div'); mid.append(el('div',null, `${s.cmit||s.kind} ${s.cn}`)); mid.append(el('div','meta', `${s.dt.slice(5)} ${s.tm||''}`)); L.append(mid, el('div','num')); ol.append(L); }
+    if(!sch.length) ol.append(state('없음','오늘·내일 눈에 띄는 일정 없음'));
+    ps.append(ol); two.append(ps);
+    const kr = ((d.gtrends||{}).KR||[]).slice(0,8);
+    const pk = panel('🔎 한국 급상승 검색어'); const ok = el('ol','tl');
+    kr.forEach((r,i)=>{ const L=el('li'); L.append(el('span','rk',String(i+1))); const mid=el('div'); mid.append(link(r.q,'https://www.google.com/search?q='+encodeURIComponent(r.q))); if(r.news&&r.news[0]) mid.append(el('div','meta',r.news[0].t)); const n=el('div','num'); n.append(el('b',null,r.traffic||'')); L.append(mid,n); ok.append(L); });
+    pk.append(ok); two.append(pk); body.append(two);
+    const hotPol = [];
+    for(const l of ['보수','진보','방송']) hotPol.push(...(((P.lanes||{})[l]||{}).videos||[]).filter(v=>v.age_h<=12));
+    hotPol.sort((a,b)=>b.vph-a.vph);
+    if(hotPol.length){ const p=panel('🚨 지금 치고 올라가는 정치 영상','12시간 안 · 시간당 조회 순'); p.append(grid(hotPol.slice(0,8),{pol:true})); body.append(p); }
+    const krShorts = ((d.explore||{}).sd||[]).filter(v=>(v.r||[]).includes('KR')).slice(0,8);
+    if(krShorts.length){ const p=panel('🇰🇷 한국 쇼츠 급상승','플레이보드 한국 일간'); p.append(grid(krShorts)); body.append(p); }
+    const gap = (A.gap||[]).filter(g=>g.score.startsWith('🟢')).slice(0,5);
+    if(gap.length){ const p=panel('🧭 해외에선 뜨는데 한국엔 적은 카테고리'); const ol2=el('ol','tl'); gap.forEach((g,i)=>{ const L=el('li'); L.append(el('span','rk',String(i+1))); const mid=el('div'); mid.append(el('div',null,g.name)); mid.append(el('div','meta',`한국 검색 결과 ${g.ko}개 · 한국 중앙 조회 ${man(g.med)}`)); const n=el('div','num'); n.append(el('b',null,'+'+man(g.gain)),el('small',null,'해외 하루 증가')); L.append(mid,n); ol2.append(L); }); p.append(ol2); body.append(p); }
+    const cg = ((d.community||{}).groups||[]).slice(0,6);
+    if(cg.length){ const p=panel('💬 커뮤니티에서 지금 도는 이야기'); p.append(commList(cg)); body.append(p); }
+  }
+  function nextDay(day, k){ const t=new Date(day+'T00:00:00'); t.setDate(t.getDate()+k); return t.toISOString().slice(0,10); }
+
+  /* ---------- 🎯 오늘 만들 것 ---------- */
+  function vTodo(body, d){
+    const L = (d.actions||{}).todo || [];
+    if(!L.length){ body.append(state('오늘 만들 소재가 아직 없어','내일 아침 갱신부터 채워져.')); return; }
+    const p = panel('오늘 만들 것', `${L.length}개 · 이미 만든 건 맨 아래`);
+    const list = el('div','todo');
+    for(const [i,t] of L.entries()){
+      const row = el('article','trow' + (t.made?' done':''));
+      const left = link('', ytUrl(t.id, t.kind), 'cthumb'); left.style.height = t.kind==='short'?'240px':'135px';
+      const th = thumb(t.id,1); if(th) left.append(th); left.append(el('span','rank',String(i+1)), el('span','gain', man(t.views)+'회'));
+      const mid = el('div','tbody');
+      const tags = el('div','ctags');
+      tags.append(el('span','tag '+(t.lane==='보수'?'boom':'short'), t.lane));
+      tags.append(el('span','tag new', '🔥'.repeat(Math.max(1,t.anger||0))+' 충돌 '+(t.anger||0)));
+      if(t.fit) tags.append(el('span','tag good','→ '+t.fit));
+      if(t.made) tags.append(el('span','tag','✅ 이미 만듦'));
+      mid.append(tags, link(t.title, ytUrl(t.id,t.kind), 'ctitle'));
+      mid.append(el('div','cmeta', `${t.channel} · 시간당 ${man(t.vph)} · ${ageTxt(t.published)}`));
+      const who = el('div','who'); who.append(el('b',null, t.who||'?'), document.createTextNode(t.target ? ` → ${t.target}` : ''), document.createTextNode(t.event? ` · ${t.event}`:''));
+      mid.append(who);
+      if(t.quote) mid.append(el('div','quote', '“'+t.quote+'”'));
+      if(t.orig){
+        const o = el('div','orig');
+        o.append(el('span','tag good','원본'));
+        const url = 'https://www.youtube.com/watch?v='+t.orig.id + (t.orig.tc!=null ? '&t='+t.orig.tc+'s' : '');
+        o.append(link(t.orig.title, url));
+        o.append(el('span','cmeta', ` ${t.orig.channel}${t.orig.dur?' · '+hms(t.orig.dur):''}${t.orig.tc!=null?' · 대사 위치 '+hms(t.orig.tc):' · 대사 위치 못 찾음'}`));
+        mid.append(o);
+      } else mid.append(el('div','cmeta','원본 못 찾음 — 방송사 풀영상에서 직접 찾아야 해'));
+      if(t.made) mid.append(el('div','cmeta', `우리 영상: ${t.made.ch} · ${t.made.title} · ${man(t.made.views)}회`));
+      row.append(left, mid); list.append(row);
+    }
+    p.append(list); body.append(p);
+  }
+
+  /* ---------- 🏛 정치 동향 ---------- */
+  function vPol(body, d){
+    const P = d.pol;
+    if(!P){ body.append(state('정치 데이터가 아직 없어','내일 아침 갱신부터 채워져.')); return; }
+    const tabs = [['보수','🔴 보수'],['진보','🔵 진보'],['방송','📡 방송·뉴스·중립'],['news','📈 뉴스 순위']];
+    body.append(seg(tabs, T.pol, k=>setTab('pol',k)));
+    if(T.pol==='news'){
+      const N = P.news||{};
+      body.append(seg([['short_daily','오늘 쇼츠'],['short_weekly','이번주 쇼츠'],['long_daily','오늘 롱폼'],['long_weekly','이번주 롱폼']], T.news, k=>setTab('news',k)));
+      const p = panel('플레이보드 한국 뉴스 순위', T.news.endsWith('weekly')?'한 주 조회 증가 순':'하루 조회 증가 순');
+      p.append(grid(N[T.news]||[])); body.append(p); return;
+    }
+    laneView(body, P, T.pol, true);
+  }
+  function laneView(body, P, lane, isPol){
+    const L = (P.lanes||{})[lane] || {};
+    body.append(el('p','count', `${lane} 채널 ${L.nch||0}개 훑음 · 최근 ${P.hours}시간 영상 ${L.count||0}편 · 오늘 새로 찾은 채널 ${P.new_channels||0}개(분류 ${P.classified||0}, 대기 ${P.unclassified||0})`));
+    const two = el('div','cols2');
+    if(isPol) two.append(chipsRow('뜨는 인물 (조회수 가중)', L.people||[]), chipsRow('뜨는 사건 키워드', L.events||[]));
+    else two.append(chipsRow('뜨는 작품 (조회수 합)', L.works||[]));
+    body.append(two);
+    if((L.must||[]).length){ const p = panel('★ 24시간 안에 10만+', isPol?'바로 원본 찾아서 만들 것':'바로 볼 것'); p.append(grid(L.must, {pol:true})); body.append(p); }
+    const p = panel('48시간 조회수 순', `${(L.videos||[]).length}편`); p.append(grid(L.videos||[], {pol:true})); body.append(p);
+    const q = panel('채널 순위', '48시간 조회 합'); q.append(chanList(L.channels||[], '48시간 조회')); body.append(q);
+  }
+
+  /* ---------- 🗓 국회 일정 ---------- */
+  function vSched(body, d){
+    const S = (d.actions||{}).schedule || [];
+    if(!S.length){ body.append(state('일정이 없어','열린국회정보에서 못 가져왔거나 일정이 비었어.')); return; }
+    const byDay = {}; for(const s of S) (byDay[s.dt]=byDay[s.dt]||[]).push(s);
+    for(const [dt, list] of Object.entries(byDay)){
+      const [y,m,dd] = dt.split('-').map(Number); const wd=['일','월','화','수','목','금','토'][new Date(Date.UTC(y,m-1,dd)).getUTCDay()];
+      const p = panel(`${m}/${dd} (${wd})${dt===d.day?' · 오늘':''}`, `${list.length}건`);
+      const ol = el('ol','tl');
+      for(const s of list.sort((a,b)=>b.hot-a.hot || (a.tm||'').localeCompare(b.tm||''))){
+        const L = el('li'); L.append(el('span','rk', s.hot===2?'🔥':s.hot===1?'⭐':'·'));
+        const mid = el('div'); mid.append(el('div',null, s.cn)); mid.append(el('div','meta', `${s.tm||''} · ${s.kind}${s.cmit?' · '+s.cmit:''}`));
+        const q = encodeURIComponent(`${s.cmit||''} ${s.cn}`.trim().slice(0,40));
+        const n = el('div','num'); n.append(link('영상 찾기','https://www.youtube.com/results?search_query='+q+'&sp=EgIIAg%253D%253D'));
+        L.append(mid, n); ol.append(L);
+      }
+      p.append(ol); body.append(p);
+    }
+  }
+
+  /* ---------- ⚔️ 우리 vs 경쟁 ---------- */
+  function vCompare(body, d){
+    const C = (d.actions||{}).compare || [];
+    if(!C.length){ body.append(state('비교할 게 아직 없어','우리 채널 최근 영상과 같은 사건의 경쟁 영상이 없거나 데이터가 비었어.')); return; }
+    for(const c of C){
+      const best = Math.max(...c.theirs.map(t=>t.views));
+      const x = best / Math.max(c.ours.views||1,1);
+      const p = panel(`${c.ours.ch} ${man(c.ours.views)}회 vs 경쟁 최고 ${man(best)}회`, x>=1 ? `저쪽이 ${x>=10?Math.round(x):x.toFixed(1)}배` : `우리가 ${(1/x).toFixed(1)}배`);
+      const row = el('div','vs');
+      row.append(card({id:c.ours.id, kind:c.ours.kind, title:c.ours.title, channel:c.ours.ch, views:c.ours.views}, null, {badge: man(c.ours.views)+'회', tags:[['good','우리']], meta:[c.ours.ch]}));
+      for(const t of c.theirs) row.append(card({id:t.id, kind:t.kind, title:t.title, channel:t.channel, views:t.views, published:t.published}, null, {badge: man(t.views)+'회', tags:[['boom','경쟁']], meta:[t.channel+' · '+ageTxt(t.published)]}));
+      p.append(row);
+      if(c.why) p.append(el('div','why','💡 '+c.why));
+      body.append(p);
+    }
+  }
+
+  /* ---------- 🏷 제목 패턴 ---------- */
+  function vTitles(body, d){
+    const Tt = (d.actions||{}).titles || {};
+    const lanes = Object.keys(Tt);
+    if(!lanes.length){ body.append(state('분석할 제목이 부족해','')); return; }
+    const box3 = el('div','cols3');
+    for(const lane of lanes){
+      const t = Tt[lane];
+      const p = panel(`${lane==='보수'?'🔴':lane==='진보'?'🔵':'📡'} ${lane}`, `${t.n}편 · 중앙값 ${man(t.base)}회`);
+      const box = el('div','cats');
+      const mx = Math.max(1, ...t.feats.map(f=>f.x));
+      for(const f of t.feats){
+        const r = el('div','cat'); r.append(el('span',null,f.f));
+        const bar=el('div','bar'); const i=el('i'); i.style.width=(f.x/mx*100).toFixed(1)+'%'; if(f.x<1) i.style.background='var(--muted)'; bar.append(i); r.append(bar);
+        r.append(el('small',null,`${f.x}배 · ${f.n}편`)); box.append(r);
+      }
+      p.append(box);
+      const ol = el('ol','tl'); t.top.slice(0,5).forEach((v,i)=>{ const L=el('li'); L.append(el('span','rk',String(i+1))); const mid=el('div'); mid.append(link(v.title, ytUrl(v.id,'short'))); mid.append(el('div','meta',v.channel)); const n=el('div','num'); n.append(el('b',null,man(v.views))); L.append(mid,n); ol.append(L); });
+      p.append(ol); box3.append(p);
+    }
+    body.append(box3);
+  }
+
+  /* ---------- 🎬 영화·드라마 ---------- */
+  function vMedia(body, d){
+    const M = d.media;
+    if(!M || !M.lanes){ body.append(state('영화·드라마 데이터가 아직 없어','내일 아침 갱신부터 채워져.')); return; }
+    body.append(seg([['영화','🎬 영화 짜깁기'],['드라마','📺 드라마 짜깁기'],['공식','🏢 공식 채널']], T.media, k=>setTab('media',k)));
+    laneView(body, M, T.media, false);
+  }
+
+  /* ---------- 🎞 트렌딩 영상 ---------- */
+  function vVideos(body, d){
+    const X = d.explore || {};
+    const f = el('div','filters');
+    const row = (label, node) => { const r=el('div','frow'); r.append(el('span','flabel',label), node); f.append(r); };
+    const redo = ()=>{ store.set('dash:vf', F); render(); };
+    row('기간', seg([['d','오늘'],['w','이번주']], F.period, k=>{F.period=k; redo();}));
+    row('유형', seg([['all','전체'],['s','쇼츠'],['l','롱폼']], F.type, k=>{F.type=k; redo();}));
+    const cs = el('div','chips');
+    for(const c of d.countries||[]){ const b=el('button','chip', flag(c)+' '+c); b.type='button'; b.setAttribute('aria-pressed', String(F.ctry.includes(c)));
+      b.onclick=()=>{ F.ctry = F.ctry.includes(c) ? F.ctry.filter(x=>x!==c) : [...F.ctry, c]; redo(); }; cs.append(b); }
+    row('국가', cs);
+    row('남아시아', seg([[true,'빼기'],[false,'포함']], F.sa, k=>{F.sa=k; redo();}));
+    row(F.period==='d'?'하루 증가':'주간 증가', seg([['all','전체'],['a','<10만'],['b','10만~100만'],['c','100만~1000만'],['e','1000만+']], F.gain, k=>{F.gain=k; redo();}));
+    row('채널 규모', seg([['all','전체'],['a','<1만'],['b','1만~10만'],['c','10만~100만'],['e','100만+']], F.subs, k=>{F.subs=k; redo();}));
+    row('정렬', seg([['g','증가량'],['r','구독자 대비'],['w','누적 조회'],['p','최신']], F.sort, k=>{F.sort=k; redo();}));
+    body.append(f);
+    const rng = {a:[0,1e5], b:[1e5,1e6], c:[1e6,1e7], e:[1e7,Infinity]};
+    const srng = {a:[0,1e4], b:[1e4,1e5], c:[1e5,1e6], e:[1e6,Infinity]};
+    let L = [...(F.type!=='l' ? X['s'+F.period]||[] : []), ...(F.type!=='s' ? X['l'+F.period]||[] : [])];
+    if(F.sa) L = L.filter(v=>!v.a);
+    if(F.ctry.length) L = L.filter(v=>(v.r||[]).some(c=>F.ctry.includes(c)));
+    if(F.gain!=='all'){ const [a,b]=rng[F.gain]; L=L.filter(v=>v.g>=a && v.g<b); }
+    if(F.subs!=='all'){ const [a,b]=srng[F.subs]; L=L.filter(v=>v.s!=null && v.s>=a && v.s<b); }
+    const key = {g:v=>-v.g, r:v=>-(v.s? v.g/v.s : 0), w:v=>-v.w, p:v=>-(v.p||0)}[F.sort];
+    L.sort((a,b)=>key(a)-key(b));
+    const p = panel('영상', `${L.length}편`);
+    const wrap = el('div','scroll'); const t = el('table','xt');
+    t.innerHTML = '<thead><tr><th>#</th><th style="text-align:left">영상</th><th>증가</th><th>누적</th><th>구독자</th><th>구독 대비</th><th>국가</th><th class="hide-sm">업로드</th></tr></thead>';
+    const tb = el('tbody');
+    for(const [i,v] of L.slice(0,150).entries()){
+      const tr = el('tr');
+      const tdT = el('td','t'); const th0 = thumb(v.id, 0.3); if(th0){ const ta0=link('',ytUrl(v.id,v.k),'xth'); ta0.append(th0); tdT.append(ta0); }
+      tdT.append(link(v.t||v.id, ytUrl(v.id,v.k)));
+      const sm = el('small'); sm.append(el('span','tag '+(v.k==='s'?'short':'long'), v.k==='s'?'쇼츠':'롱폼'), document.createTextNode(v.c||'')); tdT.append(sm);
+      tr.append(el('td',null,String(i+1)), tdT, el('td',null,'+'+man(v.g)), el('td',null,man(v.w)), el('td',null,man(v.s)), el('td',null, v.s? (v.g/v.s).toFixed(1)+'배':'–'), el('td',null,flags(v.r,4)), el('td','hide-sm',ageTxt(v.p)));
+      tb.append(tr);
+    }
+    if(!L.length){ const tr=el('tr'); const td=el('td','state'); td.colSpan=8; td.append(el('b',null,'조건에 맞는 영상이 없어'), el('span',null,'필터를 몇 개 풀어봐.')); tr.append(td); tb.append(tr); }
+    t.append(tb); wrap.append(t); p.append(wrap); body.append(p);
+    if(L.length>150) body.append(el('p','count','위 150편만 보여줌'));
+  }
+
+  /* ---------- 💤 잠든 대박 ---------- */
+  function vDormant(body, d){
+    const Z = (d.dormant||{}).lanes;
+    if(!Z){ body.append(state('아직 데이터가 없어','내일 아침 갱신부터 채워져.')); return; }
+    body.append(seg([['정치','🏛 정치'],['영화드라마','🎬 영화·드라마'],['해외','🌍 해외 트렌딩 채널']], T.dorm, k=>setTab('dorm',k)));
+    const L = Z[T.dorm] || [];
+    const p = panel('잠든 대박', `${L.length}편 · 멈춤 확인 ${L.filter(v=>v.stalled).length}편 · 나머지는 내일부터 판정`);
+    const g = el('div','grids');
+    for(const [cls, arr] of [['grid s', L.filter(v=>v.kind==='short')], ['grid l', L.filter(v=>v.kind!=='short')]]){
+      if(!arr.length) continue; const gg = el('div', cls);
+      arr.forEach((v,i)=>gg.append(card(v, i, {badge: man(v.views)+'회',
+        tags: [v.stalled===true?['boom','💤 멈춤']:v.stalled===false?['good','아직 오르는 중']:['','👀 추적 시작']],
+        meta: [`${v.channel}${v.subs!=null?' · 구독 '+man(v.subs):''}`, `${v.age_d}일 전 · 평균 하루 ${man(v.avg_day)}${v.recent_day!=null?' · 최근 하루 '+man(v.recent_day):''}`]})));
+      g.append(gg);
+    }
+    if(!L.length) g.append(state('없음','조건(3~12개월 · 조회 기준 이상)에 맞는 영상이 없어.'));
+    p.append(g); body.append(p);
+  }
+
+  /* ---------- 🔥 급상승 / 🚀 / 📺 / 👶 ---------- */
+  function vRising(body, d){
+    const tabs = [['sd','📱 오늘 쇼츠 30'],['sw','📅 이번주 인기 쇼츠 30'],['ld','🎞 오늘 롱폼 20']];
+    body.append(seg(tabs, T.rising, k=>setTab('rising',k)));
+    const L = T.rising==='sd' ? (d.items||[]).filter(v=>v.kind==='short') : T.rising==='ld' ? (d.items||[]).filter(v=>v.kind==='long') : (d.shorts_week||[]);
+    const p = panel(tabs.find(t=>t[0]===T.rising)[1], T.rising==='sw' ? '한 주 조회 증가량 순' : '하루 조회 증가량 순 · 광고 제외');
+    p.append(grid(L)); body.append(p);
+  }
+  function vOutlier(body, d){
+    body.append(seg([['global','🌍 해외'],['kr','🇰🇷 한국']], T.out, k=>setTab('out',k)));
+    const L = T.out==='kr' ? (d.outliers_kr||[]) : (d.outliers||[]);
+    const p = panel(T.out==='kr'?'한국 차트 롱폼 — 구독자 대비':'해외 롱폼 — 구독자 대비', T.out==='kr'?'하루 3만 이상 · 채널당 1편':'하루 10만 이상 · 채널당 1편');
+    p.append(grid(L, {ratio:true})); body.append(p);
+  }
+  function vChannels(body, d){
+    body.append(seg([['all','🌍 전체'],['kr','🇰🇷 한국'],['jp','🇯🇵 일본']], T.ch, k=>setTab('ch',k)));
+    const L = T.ch==='kr' ? d.channels_kr : T.ch==='jp' ? d.channels_jp : d.channels;
+    const p = panel('트렌딩 채널', T.ch==='all'?'오늘 순위 영상 하루 증가량 합':(T.ch==='kr'?'한국 차트에 뜬 영상 기준':'일본 차트에 뜬 영상 기준'));
+    p.append(chanList(L||[])); body.append(p);
+  }
+  function vKids(body, d){
+    const K = d.kids || [];
+    body.append(seg([['short','📱 쇼츠'],['long','🎞 롱폼']], T.kids, k=>setTab('kids',k)));
+    const p = panel('아동용 급상승', '하루 조회 증가 순');
+    p.append(grid(K.filter(v=>(v.kind||'short')===T.kids))); body.append(p);
+  }
+
+  /* ---------- 🗂 카테고리 + 공백 ---------- */
+  function vCats(body, d){
+    if(d.memo){ const m=el('div','memo'); m.append(el('b',null,'🧭 카테고리 발굴 메모')); for(const line of d.memo.split('\n').filter(Boolean)) m.append(el('p',null,'· '+line)); body.append(m); }
+    const G = (d.actions||{}).gap || [];
+    if(G.length){
+      const p = panel('한국 공백 점수', '카테고리마다 한국어 검색 2번 실측');
+      const ol = el('ol','tl');
+      G.forEach(g=>{ const L=el('li'); L.append(el('span','rk',g.score.slice(0,2))); const mid=el('div'); mid.append(el('div',null,`${g.name} — ${g.score.slice(2).trim()}`));
+        mid.append(el('div','meta', g.qs.map(q=>`“${q.q}” 한국 ${q.ko}/${q.n}개 · 최고 ${man(q.top)} · 중앙 ${man(q.med)}`).join('  |  ')));
+        const n=el('div','num'); n.append(el('b',null,'+'+man(g.gain)), el('small',null,`해외 ${g.n}편`)); L.append(mid,n); ol.append(L); });
+      p.append(ol); body.append(p);
+    }
+    const p = panel('뜨는 카테고리', '급상승 50편 기준 · 하루 증가량 합');
+    const box = el('div','cats'); const cl = d.categories||[]; const mx = Math.max(1,...cl.map(c=>c.gain));
+    if(!cl.length) box.append(state('분류가 없어','이날은 분류가 실패했어.'));
+    for(const c of cl){ const r=el('div','cat'); r.append(el('span',null,c.name)); const bar=el('div','bar'); const i=el('i'); i.style.width=(c.gain/mx*100).toFixed(1)+'%'; bar.append(i); r.append(bar, el('small',null,`+${man(c.gain)} · 쇼츠 ${c.short} · 롱폼 ${c.long}`)); box.append(r); }
+    p.append(box); body.append(p);
+    const byCat = {}; for(const v of d.items||[]) if(v.cat) (byCat[v.cat]=byCat[v.cat]||[]).push(v);
+    for(const c of cl.slice(0,6)){ const q=panel(c.name, `${c.n}편`); q.append(grid(byCat[c.name]||[])); body.append(q); }
+  }
+
+  /* ---------- 🔎 / 📱 / 💬 ---------- */
+  function vSearch(body, d){
+    const G = d.gtrends || {};
+    const box = el('div','cols3');
+    for(const [geo,name] of [['KR','🇰🇷 한국'],['US','🇺🇸 미국'],['JP','🇯🇵 일본']]){
+      const p = panel(name, '구글 급상승'); const ol = el('ol','tl');
+      for(const [i,r] of (G[geo]||[]).entries()){
+        const L = el('li'); L.append(el('span','rk',String(i+1)));
+        const mid = el('div'); mid.append(link(r.q, 'https://www.google.com/search?q='+encodeURIComponent(r.q)));
+        const n = (r.news||[])[0];
+        if(n){ const m=el('div','meta'); const na=link(n.t, n.u); na.style.fontWeight='400'; m.append(na, document.createTextNode(n.src?' · '+n.src:'')); mid.append(m); }
+        const num = el('div','num'); num.append(el('b',null,r.traffic||''), el('small',null,'검색'));
+        L.append(mid, num); ol.append(L);
+      }
+      if(!(G[geo]||[]).length) p.append(state('없음','이날은 못 가져왔어.')); else p.append(ol);
+      box.append(p);
+    }
+    body.append(box);
+  }
+  function vSns(body, d){
+    const S = d.sns || {}; const R = (d.community||{}).reddit || [];
+    body.append(seg([['tiktok','틱톡'],['instagram','인스타 릴스'],['reddit','레딧']], T.sns, k=>setTab('sns',k)));
+    if(T.sns==='reddit'){
+      const p = panel('레딧 인기글', '오늘 top · 한국어 번역');
+      const g = el('div','grids'); const gl = el('div','grid l');
+      R.forEach((r,n)=>{ gl.append(card({id:'rd'+n, kind:'long', title:r.ko||r.t}, n, {key:'rd:'+n, href:r.u, badge: r.video?'▶ 영상':'r/'+r.sub, title:r.ko||r.t, meta:[`r/${r.sub} · ${r.t.slice(0,60)}`]})); });
+      g.append(gl); p.append(R.length?g:state('없음','레딧을 못 가져왔어(속도 제한일 수 있어).')); body.append(p); return;
+    }
+    const L = S[T.sns]||[];
+    const p = panel(T.sns==='tiktok'?'틱톡':'인스타 릴스', `재생수 순 · 데이터 ${S.src||'-'}`);
+    const g = el('div','grids'); const gs = el('div','grid s');
+    L.forEach((r,i)=>{ const key=(T.sns==='tiktok'?'tt:':'ig:')+r.id; gs.append(card({id:r.id, kind:'short', title:r.desc||r.id}, i, {key, href:r.url, badge: man(r.plays)+'회', title:r.desc||'(설명 없음)', tags: r.kw?[['cat', r.kw.replace(/_/g,' ')]]:[], meta:[`@${r.user} · ${r.dur||'?'}초${r.ts?' · '+ageTxt(r.ts):''}`, `좋아요 ${man(r.likes)}`]})); });
+    g.append(gs); p.append(L.length?g:state('없음','정찰기 데이터가 아직 없어.')); body.append(p);
+  }
+  function commList(G){
+    const ol = el('ol','tl');
+    for(const [i,g] of G.entries()){
+      const X = el('li'); X.append(el('span','rk',String(i+1)));
+      const mid = el('div'); mid.append(link(g.t, g.u));
+      const m = el('div','meta'); if(g.n>1) m.append(el('span','tag new', `${g.n}곳 동시`)); if(g.news) m.append(el('span','tag good','기사 있음'));
+      m.append(document.createTextNode((g.sites||[]).join(' · '))); mid.append(m);
+      for(const a of (g.also||[]).slice(0,2)){ const s=el('div','meta'); const al=link(`↳ ${a.site}: ${a.t}`, a.u); al.style.fontWeight='400'; s.append(al); mid.append(s); }
+      const num = el('div','num'); num.append(el('b',null, String(g.score)), el('small',null,'점수'));
+      X.append(mid, num); ol.append(X);
+    }
+    return ol;
+  }
+  function vComm(body, d){
+    const C = d.community || {};
+    if(!C.groups){ body.append(state('커뮤니티 데이터가 아직 없어','내일 아침 갱신부터 채워져.')); return; }
+    body.append(el('p','count', `${C.total||0}개 글 수집 · ${(C.status||[]).map(s=>`${s[0]} ${s[1]}`).join(' · ')}`));
+    const sites = Object.keys(C.sites||{});
+    body.append(seg([['groups','🔥 여러 곳에 뜬 이야기'], ...sites.map(s=>[s,s])], T.comm, k=>setTab('comm',k)));
+    if(T.comm==='groups' || !C.sites[T.comm]){ const p=panel('전체 커뮤니티 TOP', '교차 등장 + 순위 점수'); p.append(commList(C.groups.slice(0,60))); body.append(p); return; }
+    const p = panel(T.comm, '인기글 순위'); const ol=el('ol','tl');
+    C.sites[T.comm].forEach(r=>{ const L=el('li'); L.append(el('span','rk',String(r.rank))); const mid=el('div'); mid.append(link(r.t, r.u)); L.append(mid, el('div','num')); ol.append(L); });
+    p.append(ol); body.append(p);
+  }
+
+  /* ---------- 📊 내 채널 보강 ---------- */
+  const PEOPLE = ['이재명','김현지','한동훈','장동혁','정청래','유시민','김어준','주진우','나경원','박지원','추미애','조국','이진숙','김태규','서영교','강훈식','조희대','윤석열','김건희','이준석','홍준표','김민석'];
+  const OURPOL = ['보수만세','명불허전','민주사관학교'];
+  function mineExtra(){
+    const box = $('mine-extra'); if(!box) return;
+    box.replaceChildren();
+    if(!snap){ box.append(state('채널 데이터를 불러오는 중','')); return; }
+    const now = Date.now()/1000;
+    const vids = (snap.videos||[]).filter(v=>v.ts && v.views!=null);
+    const old = vids.filter(v=>now-v.ts>=86400);
+    const med = a => { if(!a.length) return 0; const s=[...a].sort((x,y)=>x-y); return s[Math.floor(s.length/2)]; };
+    const tot14 = vids.reduce((a,v)=>a+(v.views||0),0);
+    const pol14 = vids.filter(v=>OURPOL.includes(v.ch)).reduce((a,v)=>a+(v.views||0),0);
+    const month = Math.round(tot14/14*30);
+    const g = panel('🎯 월 1,000만 목표', '최근 14일 올린 영상 조회 합을 한 달로 환산');
+    const gb = el('div','goal');
+    const bar = el('div','bar big'); const bi = el('i'); bi.style.width = Math.min(100, month/1e7*100).toFixed(1)+'%'; bar.append(bi);
+    gb.append(el('div','gnum', `${man(month)} / 1,000만`), bar, el('div','cmeta', `14일 조회 합 ${man(tot14)} (정치 3채널 ${man(pol14)}) · 목표까지 ${(1e7/Math.max(month,1)).toFixed(1)}배 필요`));
+    g.append(gb); box.append(g);
+    const chs = {}; for(const v of old) (chs[v.ch]=chs[v.ch]||[]).push(v);
+    const rel = v => v.views/Math.max(med((chs[v.ch]||[]).map(x=>x.views)),1);
+    const icon = r => r>=3?'🔥':r>=1.3?'👍':r>=0.5?'😐':'💀';
+    const two = el('div','cols2');
+    const sorted = [...old].sort((a,b)=>rel(b)-rel(a));
+    const mk = (title, list) => { const p=panel(title,'채널 중앙값 대비'); const ol=el('ol','tl'); list.forEach(v=>{ const L=el('li'); L.append(el('span','rk',icon(rel(v)))); const mid=el('div'); mid.append(link(v.title||v.id, ytUrl(v.id,v.kind))); mid.append(el('div','meta',`${v.ch} · ${ageTxt(v.ts)}`)); const n=el('div','num'); n.append(el('b',null,man(v.views)), el('small',null,rel(v).toFixed(1)+'배')); L.append(mid,n); ol.append(L); }); if(!list.length) ol.append(state('없음','')); p.append(ol); return p; };
+    two.append(mk('🏆 평소보다 터진 영상', sorted.slice(0,8)), mk('💀 평소보다 부진한 영상', sorted.slice(-8).reverse()));
+    box.append(two);
+    const rep = panel('채널 성적표', '최근 14일 · 올린 지 하루 지난 영상 기준');
+    const w = el('div','scroll'); const t = el('table'); t.innerHTML='<thead><tr><th>채널</th><th>영상</th><th>중앙값</th><th>최고</th><th>🔥 3배+</th><th>💀 절반 미만</th></tr></thead>';
+    const tb = el('tbody');
+    Object.entries(chs).sort((a,b)=>med(b[1].map(x=>x.views))-med(a[1].map(x=>x.views))).forEach(([ch,L])=>{ const tr=el('tr'); const m=med(L.map(x=>x.views)); tr.append(el('td','name',ch), el('td',null,String(L.length)), el('td',null,man(m)), el('td',null,man(Math.max(...L.map(x=>x.views)))), el('td',null,String(L.filter(v=>v.views>=3*m).length)), el('td',null,String(L.filter(v=>v.views<0.5*m).length))); tb.append(tr); });
+    t.append(tb); w.append(t); rep.append(w); box.append(rep);
+    const hours = {}; for(const v of old){ const h = Math.floor(((new Date(v.ts*1000).getUTCHours()+9)%24)/3)*3; (hours[h]=hours[h]||[]).push(rel(v)); }
+    const hp = panel('⏰ 업로드 시간대(한국 시간)', '채널 중앙값 대비 배수의 중앙값'); const hb = el('div','cats');
+    const hmx = Math.max(1, ...Object.values(hours).map(a=>med(a)));
+    for(let h=0; h<24; h+=3){ const a=hours[h]||[]; const r=el('div','cat'); r.append(el('span',null,`${h}~${h+3}시`)); const b2=el('div','bar'); const i=el('i'); i.style.width=(a.length?med(a)/hmx*100:0).toFixed(1)+'%'; b2.append(i); r.append(b2, el('small',null, a.length?`${med(a).toFixed(2)}배 · ${a.length}편`:'없음')); hb.append(r); }
+    hp.append(hb);
+    const polv = old.filter(v=>OURPOL.includes(v.ch));
+    const pp = panel('👤 인물별 성과 (정치 3채널)', '제목에 그 인물이 들어간 영상의 조회 중앙값'); const pb = el('div','cats');
+    const rows = PEOPLE.map(p=>{ const a=polv.filter(v=>(v.title||'').includes(p)).map(v=>v.views); return [p, a.length, med(a)]; }).filter(r=>r[1]>=2).sort((a,b)=>b[2]-a[2]);
+    const pmx = Math.max(1, ...rows.map(r=>r[2]));
+    for(const [p,n,m] of rows){ const r=el('div','cat'); r.append(el('span',null,p)); const b3=el('div','bar'); const i=el('i'); i.style.width=(m/pmx*100).toFixed(1)+'%'; b3.append(i); r.append(b3, el('small',null,`${man(m)} · ${n}편`)); pb.append(r); }
+    if(!rows.length) pb.append(state('데이터 부족',''));
+    pp.append(pb);
+    const two2 = el('div','cols2'); two2.append(hp, pp); box.append(two2);
+  }
+
+  /* ---------- 불러오기 ---------- */
+  function load(){
+    render();
+    if(!db || !tsel) return;
+    if(unsub){ for(const u of unsub){ try{ u(); }catch(e){} } unsub=null; }
+    const day = tsel, part = {};
+    const merge = ()=>{ if(!part.d) return;
+      docs[day] = Object.assign({}, part.d, {explore: part.x && part.x.explore, pol: part.p && part.p.pol, actions: part.a && part.a.actions, dormant: part.a && part.a.dormant,
+        media: part.m && part.m.media, sns: part.s ? part.s.sns : part.d.sns, community: part.s ? part.s.community : part.d.community, gtrends: part.s ? part.s.gtrends : part.d.gtrends, noe: part.n && part.n.noe});
+      if(!docs[day].day) docs[day].day = day; if(!$('v-disc').hidden) render(); };
+    unsub = ['d','x','p','a','m','s','n'].map(k => db.doc(`trend/${k}-${day}`).onSnapshot(s=>{ part[k] = s.exists ? s.data() : (k==='d' ? {day, updated:0} : null); merge(); }, ()=>{}));
+  }
+
+  // 새로고침 버튼 — 저장된 수치를 즉시 다시 읽고, 로컬 수집을 요청해 둔다(cmd/refresh)
+  function freshText(){
+    const u = snap && snap.updated ? new Date(snap.updated*1000) : null;
+    if(!u) return '';
+    const m = Math.round((Date.now()-u.getTime())/60000);
+    const ago = m < 1 ? '방금' : m < 60 ? `${m}분 전` : `${Math.floor(m/60)}시간 ${m%60}분 전`;
+    return `수집 ${ago} · ${u.toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})}`;
+  }
+  // 새로고침 누르면 텔레그램(대시보드 알림 봇)으로 바로 알림 (1001)
+  const TG = {t:'8714624996:AAFHopLQV8kju_0-e85SQ27QdHqmgVg0pLs', c:'6959280259'};
+  function tg(text){
+    try{
+      fetch(`https://api.telegram.org/bot${TG.t}/sendMessage`, {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({chat_id: TG.c, text})}).then(r=>r.json()).then(j=>{
+          if(!j.ok) paintFresh(freshText()+' · 텔레그램 실패: '+(j.description||''));
+        }).catch(e=>{ paintFresh(freshText()+' · 텔레그램 못 보냄(차단)'); });
+    }catch(e){}
+  }
+  function paintFresh(msg){ const e=$('freshline'); if(e) e.textContent = msg || freshText(); }
+  setInterval(()=>{ if($('freshline') && !$('freshline').dataset.busy) paintFresh(); }, 60000);
+  $('refresh').addEventListener('click', async ()=>{
+    const b=$('refresh'), f=$('freshline'); b.disabled=true; const old=b.textContent; b.textContent='불러오는 중…';
+    if(f) f.dataset.busy='1';
+    try{
+      if(db){
+        const s1 = await db.doc('snap/latest').get();
+        if(s1 && s1.exists){ snap = s1.data(); }
+        if(idx===null || idx){ const s2 = await db.doc('trend/index').get(); idx = s2 && s2.exists ? s2.data() : idx; }
+        try{ await db.doc('cmd/refresh').set({ at: Date.now(), by: 'dashboard' }); }catch(e){}
+        tg(`🔄 대시보드 새로고침 눌렀어 — ${new Date().toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})}\n${freshText()||'수집 기록 없음'}\n새로 긁어오려면 꼬봉한테 "대시보드 갱신" 이라고 해줘.`);
+        render(); if(view==='mine') mineExtra();
+        paintFresh(freshText() + ' · 새 수집 요청함');
+      } else {
+        paintFresh('데이터에 연결할 수 없어 — claude.ai 에서 로그인한 상태로 열어줘');
+      }
+    } catch(e){ paintFresh('다시 불러오지 못했어 — 잠시 뒤 눌러줘'); }
+    finally{ b.disabled=false; b.textContent=old; if(f) delete f.dataset.busy; }
+  });
+
+  window.addEventListener('snapgist', e=>{ if(!snap || (snap.updated||0) < e.detail.updated){ snap = e.detail; paintFresh(); if(view==='mine') mineExtra(); } });
+  show();
+  (async function(){
+    db = window.claude && window.claude.use ? await window.claude.use('db') : null;
+    if(!db){ if(view!=='mine') render(); return; }
+    db.doc('snap/latest').onSnapshot(s=>{ if(!s.exists || (snap && (snap.updated||0) > (s.data().updated||0))) return; snap = s.data(); paintFresh(); if(view==='mine') mineExtra(); }, ()=>{});
+    db.doc('trend/index').onSnapshot(s=>{
+      idx = s.exists ? s.data() : null;
+      if(idx && (!tsel || !idx.days.includes(tsel))) { tsel = idx.latest; load(); } else if(!$('v-disc').hidden) render();
+    }, ()=>{});
+  })();
+})();
+</script>
+
