@@ -403,7 +403,8 @@ main.wrap{max-width:1240px;width:100%}
   // 1012: 클로드 한도와 무관하게 — 깃허브 gist 에 올린 최신 수치를 직접 읽는다(더 새것이면 씀)
   const GIST = 'https://gist.githubusercontent.com/belabunny89/40bb62126715a614edc43dc1aeac7f80/raw/snap_latest.json?t='+Date.now();  // 1012: 페이지와 같이 올린 파일(바깥 주소는 claude.ai 가 막음)
   async function pullGist(){
-    try{ const r = await fetch(GIST.split('?t=')[0]+'?t='+Date.now(), {cache:'no-store'}); if(!r.ok) return;
+    try{ let r = null; try{ r = await fetch('snap.json?t='+Date.now(), {cache:'no-store'}); }catch(e){}
+      if(!r || !r.ok) r = await fetch(GIST.split('?t=')[0]+'?t='+Date.now(), {cache:'no-store'}); if(!r.ok) return;
       const j = await r.json();
       if(j && j.updated && (!data || (data.updated||0) < j.updated)){ data = j; render(); window.dispatchEvent(new CustomEvent('snapgist',{detail:j})); }
     }catch(e){}
